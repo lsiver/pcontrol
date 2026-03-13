@@ -12,6 +12,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
@@ -77,11 +78,17 @@ public class Main extends Application {
         replotButton.setMaxWidth(Double.MAX_VALUE);
         replotButton.setOnAction(event -> replotOpenLoop());
 
+
+        Label kpLabel = new Label("Kp");
+        Tooltip kpTooltip = new Tooltip("Change in PV per 1% OP change");
+        kpTooltip.setShowDelay(javafx.util.Duration.millis(200));
+        kpLabel.setTooltip(kpTooltip);
+
         GridPane inputGrid = new GridPane();
         inputGrid.setHgap(10);
         inputGrid.setVgap(12);
         inputGrid.addRow(0, new Label("Horizon"), horizonField);
-        inputGrid.addRow(1, new Label("Kp"), kpField);
+        inputGrid.addRow(1, kpLabel, kpField);
         inputGrid.addRow(2, new Label("tau"), tauField);
         inputGrid.addRow(3, new Label("deadtime"), deadtimeField);
 
