@@ -41,7 +41,8 @@ public class Simulation {
 
         int i = 0;
         for (double t = 0; t<= process.horizon; t+=process.dt) {
-            // Apply the setpoint step immediately; the process buffer models deadtime.
+            // Apply the setpoint step immediately
+            //  the process buffer models deadtime.
             SP = dSP;
 
             double error = SP - currentPV;
@@ -69,6 +70,10 @@ public class Simulation {
             // Clamp OP (0-100%)
             currentOP = Math.max(0, Math.min(100, currentOP));
 
+            //Was after FOPDT but this would cause error = 0 at all times;
+            lastPV = currentPV;
+            lastError = error;
+
             // 2. Handle Deadtime
             deadtimeBuffer.add(currentOP);
             double delayedOP = (deadtimeBuffer.size() > delaySteps) ? deadtimeBuffer.poll() : 0;
@@ -77,10 +82,6 @@ public class Simulation {
             // PV_dot = (1/tau) * (Kp * OP_delayed - PV)
             double pvChange = (process.dt / process.tau) * (process.Kp * delayedOP - currentPV);
             currentPV += pvChange;
-
-            // Update history
-            lastPV = currentPV;
-            lastError = error;
 
             PVdata[0][i] = (double) t;
             PVdata[1][i] = currentPV;
