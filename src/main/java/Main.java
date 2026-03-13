@@ -13,7 +13,10 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -30,6 +33,10 @@ public class Main extends Application {
     private TextField controllerKpField;
     private TextField tiField;
     private TextField tdField;
+    private TextField pvHiField;
+    private TextField pvLoField;
+    private TextField opHiField;
+    private TextField opLoField;
     private ComboBox<String> equationTypeComboBox;
     private TextField dspField;
     private LineChart<Number, Number> pvSpChart;
@@ -81,7 +88,7 @@ public class Main extends Application {
         VBox controls = new VBox(14,
                 new Label("Open Loop Parameters"),
                 inputGrid,
-                new Label("dt is fixed at 0.1 seconds."),
+                // new Label("dt is fixed at 0.1 seconds."),
                 replotButton,
                 openLoopValidationLabel);
         controls.setAlignment(Pos.TOP_LEFT);
@@ -106,6 +113,11 @@ public class Main extends Application {
         controllerKpField = new TextField("0.35");
         tiField = new TextField("3.0");
         tdField = new TextField("0.0");
+        pvHiField = new TextField("100");
+        pvLoField = new TextField("0");
+        opHiField = new TextField("100");
+        opLoField = new TextField("0");
+
         dspField = new TextField("5.0");
         equationTypeComboBox = new ComboBox<>();
         equationTypeComboBox.getItems().addAll("A", "B", "C");
@@ -118,6 +130,14 @@ public class Main extends Application {
         replotButton.setMaxWidth(Double.MAX_VALUE);
         replotButton.setOnAction(event -> replotControl());
 
+        ColumnConstraints col1 = new ColumnConstraints();
+        col1.setHgrow(Priority.NEVER);
+        col1.setMinWidth(Region.USE_PREF_SIZE);
+
+        ColumnConstraints col2 = new ColumnConstraints();
+        col2.setHgrow(Priority.ALWAYS);
+        col2.setMinWidth(50);
+        
         GridPane inputGrid = new GridPane();
         inputGrid.setHgap(10);
         inputGrid.setVgap(12);
@@ -125,24 +145,43 @@ public class Main extends Application {
         inputGrid.addRow(1, new Label("Ti"), tiField);
         inputGrid.addRow(2, new Label("Td"), tdField);
         inputGrid.addRow(3, new Label("Equation"), equationTypeComboBox);
+        inputGrid.getColumnConstraints().addAll(col1, col2);
 
         GridPane spGrid = new GridPane();
         spGrid.setHgap(10);
         spGrid.setVgap(12);
         spGrid.addRow(0, new Label("dSP"), dspField);
 
+        GridPane limitsGrid = new GridPane();
+        limitsGrid.setHgap(10);
+        limitsGrid.setVgap(12);
+        limitsGrid.addRow(0, new Label("PV Hi"), pvHiField);
+        limitsGrid.addRow(1, new Label("PV Lo"), pvLoField);
+        limitsGrid.addRow(2, new Label("OP Hi"), opHiField);
+        limitsGrid.addRow(3, new Label("OP Lo"), opLoField);
+        limitsGrid.getColumnConstraints().addAll(col1, col2);
+
+
+        Label infoLabel = new Label("Process values come from the Open Loop tab");
+        infoLabel.setWrapText(true);
+    
+
         VBox controls = new VBox(14,
                 new Label("Controller Parameters"),
                 inputGrid,
-                new Label("Process values come from the Open Loop tab."),
+                infoLabel,
+                limitsGrid,
                 new Label("Setpoint Change"),
                 spGrid,
                 replotButton,
                 controlValidationLabel);
+
+        infoLabel.prefWidthProperty().bind(controls.widthProperty().subtract(32));
+
         controls.setAlignment(Pos.TOP_LEFT);
         controls.setPadding(new Insets(16));
-        controls.setPrefWidth(280);
-        controls.setMinWidth(280);
+        controls.setMinWidth(150);
+        controls.setMaxWidth(280);
 
         pvSpChart = createLineChart("PV vs SP", "Time", "Value");
         opChart = createLineChart("Controller Output (OP)", "Time", "% Output");
@@ -155,6 +194,8 @@ public class Main extends Application {
         BorderPane content = new BorderPane();
         content.setLeft(controls);
         content.setCenter(charts);
+
+        controls.prefWidthProperty().bind(content.widthProperty().multiply(0.25));
 
         Tab controlTab = new Tab("Control", content);
         controlTab.setClosable(false);
