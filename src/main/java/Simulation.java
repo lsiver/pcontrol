@@ -41,7 +41,8 @@ public class Simulation {
 
         int i = 0;
         for (double t = 0; t<= process.horizon; t+=process.dt) {
-            SP = (t > 5) ? dSP : 0;
+            // Apply the setpoint step immediately; the process buffer models deadtime.
+            SP = dSP;
 
             double error = SP - currentPV;
             double dPV = (currentPV - lastPV) / process.dt;
@@ -113,7 +114,8 @@ public class Simulation {
         int i = 0;
         double openLoopPV = 0;
         for (double t = 0; t<= process.horizon; t+=process.dt) {
-            double manualOP = (t > 5) ? 1.0 : 0;
+            // Apply the open-loop step immediately; the buffer below models deadtime.
+            double manualOP = 1.0;
 
             openLoopBuffer.add(manualOP);
             double delayedManualOP = (openLoopBuffer.size() > delaySteps) ? openLoopBuffer.poll() : 0;
@@ -133,6 +135,18 @@ public class Simulation {
 
         this.plotOption = 2;
 
+    }
+
+    public double[][] getPVData() {
+        return this.PVdata;
+    }
+
+    public double[][] getSPData() {
+        return this.SPdata;
+    }
+
+    public double[][] getOPData() {
+        return this.OPdata;
     }
 
     public void plotter() {
