@@ -12,6 +12,4 @@ public class Process {
         this.tau = tau;
         this.deadtime = deadtime;
     }
-
-    
 }

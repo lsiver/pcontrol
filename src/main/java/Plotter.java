@@ -11,7 +11,7 @@ import org.jfree.chart.renderer.xy.StandardXYItemRenderer;
 import org.jfree.data.xy.DefaultXYDataset;
 
 public class Plotter extends JFrame {
-    
+
     public Plotter() {
         this.setTitle("Process Control Simulator - Type ");
         // this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -23,14 +23,11 @@ public class Plotter extends JFrame {
         PVSPdataset.addSeries("Process Variable (PV)", PVseries);
         PVSPdataset.addSeries("Setpoint (SP)", SPseries);
 
-
         DefaultXYDataset OPdataset = new DefaultXYDataset();
         OPdataset.addSeries("OP Data", OPseries);
 
         JFreeChart pvChart = ChartFactory.createXYLineChart("PV vs SP", "Time", "Value", PVSPdataset);
         JFreeChart opChart = ChartFactory.createXYLineChart("Controller Output (OP)", "Time", "% Output", OPdataset);
-
-
 
         this.setLayout(new GridLayout(2, 1));
         this.add(new ChartPanel(pvChart));
@@ -71,17 +68,17 @@ public class Plotter extends JFrame {
         // Create Plot and Map Datasets
         XYPlot plot = new XYPlot();
         plot.setDomainAxis(timeAxis);
-        
+
         // Primary Axis (Left)
         plot.setRangeAxis(0, pvAxis);
         plot.setDataset(0, pvSpDataset);
         plot.setRenderer(0, new StandardXYItemRenderer());
-        
+
         // Secondary Axis (Right)
         plot.setRangeAxis(1, opAxis);
         plot.setDataset(1, opDataset);
         plot.setRenderer(1, new StandardXYItemRenderer());
-        
+
         // Map Dataset 1 (OP) to Axis 1 (Right)
         plot.mapDatasetToRangeAxis(1, 1);
 
@@ -106,17 +103,17 @@ public class Plotter extends JFrame {
         // Create Plot and Map Datasets
         XYPlot plot = new XYPlot();
         plot.setDomainAxis(timeAxis);
-        
+
         // Primary Axis (Left)
         plot.setRangeAxis(0, pvAxis);
         plot.setDataset(0, pvSpDataset);
         plot.setRenderer(0, new StandardXYItemRenderer());
-        
+
         // Secondary Axis (Right)
         plot.setRangeAxis(1, opAxis);
         plot.setDataset(1, opDataset);
         plot.setRenderer(1, new StandardXYItemRenderer());
-        
+
         // Map Dataset 1 (OP) to Axis 1 (Right)
         plot.mapDatasetToRangeAxis(1, 1);
 

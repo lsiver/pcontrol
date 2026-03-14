@@ -1,8 +1,5 @@
-
 import java.util.LinkedList;
 import java.util.Queue;
-
-
 
 public class Simulation {
     Process process;
@@ -39,7 +36,6 @@ public class Simulation {
         double opRange = Math.abs(pid.opHi - pid.opLo);
         double outputFrac = 0;
 
-
         // Buffer for Deadtime
         Queue<Double> deadtimeBuffer = new LinkedList<>();
         int delaySteps = (int) (process.deadtime / process.dt);
@@ -72,7 +68,7 @@ public class Simulation {
 
             outputFrac = pTerm +iTerm + dTerm;
             currentOP = outputFrac * opRange;
-            
+
             // Clamp OP (0-100%)
             currentOP = Math.max(pid.opLo, Math.min(pid.opHi, currentOP));
 
@@ -107,7 +103,7 @@ public class Simulation {
         this.OPdata = OPdata;
 
         this.plotOption = 1;
-        
+
     }
 
     public void runSPChangeSim(double dSP) {
@@ -125,7 +121,6 @@ public class Simulation {
         double pvRange = Math.abs(pid.pvHi - pid.pvLo);
         double opRange = Math.abs(pid.opHi - pid.opLo);
 
-
         // Buffer for Deadtime
         Queue<Double> deadtimeBuffer = new LinkedList<>();
         int delaySteps = (int) (process.deadtime / process.dt);
@@ -136,7 +131,7 @@ public class Simulation {
             //  the process buffer models deadtime.
             SP = dSP;
 
-        // Calculate Error and Changes
+            // Calculate Error and Changes
             double error = (SP - currentPV) / pvRange;
             double deltaPV = (currentPV - lastPV) / pvRange;
             double deltaError = error - lastError;
@@ -147,7 +142,7 @@ public class Simulation {
 
             // Select Term Logic based on Equation Type
             // Constants are applied to the CHANGES in the signals
-            
+
             // Integral is always on Error for A, B, and C
             dI = (pid.Kc / pid.Ti) * error * process.dt;
 
@@ -162,11 +157,11 @@ public class Simulation {
                 dD = -pid.Kc * pid.Td * (deltaPV / process.dt); // D on PV
             }
 
-            // Update the Output 
+            // Update the Output
             double deltaOP_Frac = dP + dI + dD;
             currentOP += (deltaOP_Frac * opRange);
 
-            // Constraints 
+            // Constraints
             currentOP = Math.max(pid.opLo, Math.min(pid.opHi, currentOP));
 
             // Update state for next iteration
@@ -198,7 +193,7 @@ public class Simulation {
         this.OPdata = OPdata;
 
         this.plotOption = 1;
-        
+
     }
 
     public void runDisturbanceSim(double loadStep) {
@@ -211,8 +206,8 @@ public class Simulation {
         double currentPV = 0;
         double lastPV = 0;
         double lastError = 0;
-        double currentOP = loadStep; 
-        double SP = 0; 
+        double currentOP = loadStep;
+        double SP = 0;
 
         double pvRange = Math.abs(pid.pvHi - pid.pvLo);
         double opRange = Math.abs(pid.opHi - pid.opLo);
@@ -225,7 +220,7 @@ public class Simulation {
 
             //push the OP into the buffer
             deadtimeBuffer.add(currentOP);
-            
+
             // pull the delayed OP. If buffer isn't full, assume the disturbance 'loadStep'
             // is what the process sees initially at t=0.
             double delayedOP = (deadtimeBuffer.size() > delaySteps) ? deadtimeBuffer.poll() : loadStep;
@@ -270,8 +265,8 @@ public class Simulation {
         this.PVdata = PVdata;
         this.SPdata = SPdata;
         this.OPdata = OPdata;
-        this.plotOption = 1; 
-}
+        this.plotOption = 1;
+    }
 
     public void runOpenLoopSim() {
         int length = (int) (process.horizon/process.dt);

@@ -98,7 +98,6 @@ public class Main extends Application {
         replotButton.setMaxWidth(Double.MAX_VALUE);
         replotButton.setOnAction(event -> replotOpenLoop());
 
-
         Label kpLabel = new Label("Kp");
         Tooltip kpTooltip = new Tooltip("Change in PV per 1% OP change");
         kpTooltip.setShowDelay(javafx.util.Duration.millis(200));
@@ -164,7 +163,7 @@ public class Main extends Application {
         ColumnConstraints col2 = new ColumnConstraints();
         col2.setHgrow(Priority.ALWAYS);
         col2.setMinWidth(50);
-        
+
         GridPane inputGrid = new GridPane();
         inputGrid.setHgap(10);
         inputGrid.setVgap(12);
@@ -195,7 +194,6 @@ public class Main extends Application {
 
         Label infoLabel = new Label("Process values come from the Open Loop tab");
         infoLabel.setWrapText(true);
-    
 
         VBox controls = new VBox(14,
                 new Label("Controller Parameters"),
@@ -238,68 +236,67 @@ public class Main extends Application {
         return controlTab;
     }
 
-private Tab createLibraryTab() {
-    loopNameField = new TextField("XXTCXXX");
-    runListView = new ListView<>();
-    
-    Button loadFileButton = new Button("Browse Files...");
-    loadFileButton.setOnAction(e -> loadLoopFile());
+    private Tab createLibraryTab() {
+        loopNameField = new TextField("XXTCXXX");
+        runListView = new ListView<>();
 
-    Button saveCurrentButton = new Button("Snapshot Current Tuning");
-    saveCurrentButton.setStyle("-fx-base: #2ecc71;");
-    saveCurrentButton.setMaxWidth(Double.MAX_VALUE);
-    saveCurrentButton.setOnAction(e -> saveCurrentRun());
+        Button loadFileButton = new Button("Browse Files...");
+        loadFileButton.setOnAction(e -> loadLoopFile());
 
-    Button applyButton = new Button("Apply Selected Tuning");
-    applyButton.setStyle("-fx-base: #3498db; -fx-text-fill: white; -fx-font-weight: bold;");
-    applyButton.setMaxWidth(Double.MAX_VALUE);
-    applyButton.setOnAction(e -> {
-        TuningRun selected = runListView.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            applyRunToFields(selected);
-            replotControl();
-            if (tabPane != null) tabPane.getSelectionModel().select(1);
-        }
-    });
+        Button saveCurrentButton = new Button("Snapshot Current Tuning");
+        saveCurrentButton.setStyle("-fx-base: #2ecc71;");
+        saveCurrentButton.setMaxWidth(Double.MAX_VALUE);
+        saveCurrentButton.setOnAction(e -> saveCurrentRun());
 
-    Button deleteButton = new Button("Delete Selected Tuning");
-    deleteButton.setStyle("-fx-base: #e74c3c; -fx-text-fill: white;");
-    deleteButton.setMaxWidth(Double.MAX_VALUE);
-    deleteButton.setOnAction(e -> deleteSelectedRun());
-
-    runListView.setOnMouseClicked(event -> {
-        if (event.getClickCount() == 2) {
+        Button applyButton = new Button("Apply Selected Tuning");
+        applyButton.setStyle("-fx-base: #3498db; -fx-text-fill: white; -fx-font-weight: bold;");
+        applyButton.setMaxWidth(Double.MAX_VALUE);
+        applyButton.setOnAction(e -> {
             TuningRun selected = runListView.getSelectionModel().getSelectedItem();
             if (selected != null) {
                 applyRunToFields(selected);
                 replotControl();
-                tabPane.getSelectionModel().select(1);
+                if (tabPane != null) tabPane.getSelectionModel().select(1);
             }
-        }
-    });
+        });
 
-    VBox layout = new VBox(15, 
-        new Label("LOAD LOOP"),
-        new HBox(10, new Label("Current Loop:"), loopNameField, loadFileButton),
-        new Separator(),
-        new Label("SAVED TUNINGS"),
-        runListView,
-        new HBox(10, applyButton, deleteButton), 
-        new Separator(),
-        saveCurrentButton
-    );
-    
-    HBox.setHgrow(applyButton, Priority.ALWAYS);
-    HBox.setHgrow(deleteButton, Priority.ALWAYS);
-    
-    layout.setPadding(new Insets(20));
-    VBox.setVgrow(runListView, Priority.ALWAYS);
+        Button deleteButton = new Button("Delete Selected Tuning");
+        deleteButton.setStyle("-fx-base: #e74c3c; -fx-text-fill: white;");
+        deleteButton.setMaxWidth(Double.MAX_VALUE);
+        deleteButton.setOnAction(e -> deleteSelectedRun());
 
-    Tab libraryTab = new Tab("Library", layout);
-    libraryTab.setClosable(false);
-    return libraryTab;
+        runListView.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2) {
+                TuningRun selected = runListView.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    applyRunToFields(selected);
+                    replotControl();
+                    tabPane.getSelectionModel().select(1);
+                }
+            }
+        });
 
-}
+        VBox layout = new VBox(15,
+            new Label("LOAD LOOP"),
+            new HBox(10, new Label("Current Loop:"), loopNameField, loadFileButton),
+            new Separator(),
+            new Label("SAVED TUNINGS"),
+            runListView,
+            new HBox(10, applyButton, deleteButton),
+            new Separator(),
+            saveCurrentButton
+        );
+
+        HBox.setHgrow(applyButton, Priority.ALWAYS);
+        HBox.setHgrow(deleteButton, Priority.ALWAYS);
+
+        layout.setPadding(new Insets(20));
+        VBox.setVgrow(runListView, Priority.ALWAYS);
+
+        Tab libraryTab = new Tab("Library", layout);
+        libraryTab.setClosable(false);
+        return libraryTab;
+    }
 
 
     private void replotOpenLoop() {
@@ -338,15 +335,15 @@ private Tab createLibraryTab() {
             // Use the Plotter to create the Swing panel
             Plotter plotter = new Plotter();
             ChartPanel spChart = plotter.createControlChart(
-                simulation.getPVData(), 
-                simulation.getSPData(), 
+                simulation.getPVData(),
+                simulation.getSPData(),
                 simulation.getOPData()
             );
 
             simulation.runDisturbanceSim(dOP);
             ChartPanel distChart = plotter.createDisturbChart(
-                simulation.getPVData(), 
-                simulation.getSPData(), 
+                simulation.getPVData(),
+                simulation.getSPData(),
                 simulation.getOPData()
             );
 
@@ -441,39 +438,39 @@ private Tab createLibraryTab() {
         distField.setText(run.dOP);
     }
 
-private void saveCurrentRun() {
-    String tagName = loopNameField.getText().trim();
-    if (tagName.isEmpty()) {
-        controlValidationLabel.setText("Please enter a Loop Tag name first.");
-        return;
-    }
+    private void saveCurrentRun() {
+        String tagName = loopNameField.getText().trim();
+        if (tagName.isEmpty()) {
+            controlValidationLabel.setText("Please enter a Loop Tag name first.");
+            return;
+        }
 
-    String scenarioName = "Run " + (runListView.getItems().size() + 1) + " (Kc=" + controllerKcField.getText() + ")" + 
-    " (Ti=" + tiField.getText() + ")" + " (Td=" + tdField.getText() + ")" + " (SimTime=" + horizonField.getText() + ")";
-    
-    TuningRun run = new TuningRun(scenarioName, 
-        horizonField.getText(), kpField.getText(), tauField.getText(), deadtimeField.getText(),
-        controllerKcField.getText(), tiField.getText(), tdField.getText(), equationTypeComboBox.getValue(),
-        pvHiField.getText(), pvLoField.getText(), opHiField.getText(), opLoField.getText(),
-        dspField.getText(), distField.getText()
-    );
+        String scenarioName = "Run " + (runListView.getItems().size() + 1) + " (Kc=" + controllerKcField.getText() + ")"
+            + " (Ti=" + tiField.getText() + ")" + " (Td=" + tdField.getText() + ")" + " (SimTime=" + horizonField.getText() + ")";
 
-    runListView.getItems().add(run);
-    
-    // Save to the filename specified in the Loop Tag field
-    File file = new File(tagName + ".tun");
-    try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(file, true)))) {
-        out.println(run.toCsvLine());
-        controlValidationLabel.setText("Saved to " + file.getAbsolutePath());
-    } catch (IOException e) {
-        controlValidationLabel.setText("Save failed: " + e.getMessage());
+        TuningRun run = new TuningRun(scenarioName,
+            horizonField.getText(), kpField.getText(), tauField.getText(), deadtimeField.getText(),
+            controllerKcField.getText(), tiField.getText(), tdField.getText(), equationTypeComboBox.getValue(),
+            pvHiField.getText(), pvLoField.getText(), opHiField.getText(), opLoField.getText(),
+            dspField.getText(), distField.getText()
+        );
+
+        runListView.getItems().add(run);
+
+        // Save to the filename specified in the Loop Tag field
+        File file = new File(tagName + ".tun");
+        try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(file, true)))) {
+            out.println(run.toCsvLine());
+            controlValidationLabel.setText("Saved to " + file.getAbsolutePath());
+        } catch (IOException e) {
+            controlValidationLabel.setText("Save failed: " + e.getMessage());
+        }
     }
-}
 
     private void loadLoopFile() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Tuning Loop File");
-        
+
         // Set the extension filter
         fileChooser.getExtensionFilters().add(
             new FileChooser.ExtensionFilter("Tuning Files", "*.tun", "*.txt")
@@ -500,60 +497,58 @@ private void saveCurrentRun() {
                 controlValidationLabel.setText("Error reading file: " + e.getMessage());
             }
         }
-}
-
-private void deleteSelectedRun() {
-    TuningRun selected = runListView.getSelectionModel().getSelectedItem();
-    if (selected == null) return;
-
-    // Remove from the UI list
-    runListView.getItems().remove(selected);
-
-    // Overwrite the file with the remaining list items
-    String tagName = loopNameField.getText().trim();
-    if (tagName.isEmpty()) return;
-
-    File file = new File(tagName + ".tun");
-    try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(file, false)))) { // false = overwrite
-        for (TuningRun run : runListView.getItems()) {
-            out.println(run.toCsvLine());
-        }
-        controlValidationLabel.setText("Deleted scenario from " + tagName + ".tun");
-    } catch (IOException e) {
-        controlValidationLabel.setText("Delete failed: " + e.getMessage());
     }
-}
 
-        public static class TuningRun {
-            public String name;
-            public String horizon, kp, tau, deadtime; 
-            public String kc, ti, td, eqType;         
-            public String pvHi, pvLo, opHi, opLo;     
-            public String dSP, dOP;                   
+    private void deleteSelectedRun() {
+        TuningRun selected = runListView.getSelectionModel().getSelectedItem();
+        if (selected == null) return;
 
-            public TuningRun(String name, String horizon, String kp, String tau, String deadtime,
-                            String kc, String ti, String td, String eqType,
-                            String pvHi, String pvLo, String opHi, String opLo,
-                            String dSP, String dOP) {
-                this.name = name;
-                this.horizon = horizon; this.kp = kp; this.tau = tau; this.deadtime = deadtime;
-                this.kc = kc; this.ti = ti; this.td = td; this.eqType = eqType;
-                this.pvHi = pvHi; this.pvLo = pvLo; this.opHi = opHi; this.opLo = opLo;
-                this.dSP = dSP; this.dOP = dOP;
+        // Remove from the UI list
+        runListView.getItems().remove(selected);
+
+        // Overwrite the file with the remaining list items
+        String tagName = loopNameField.getText().trim();
+        if (tagName.isEmpty()) return;
+
+        File file = new File(tagName + ".tun");
+        try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(file, false)))) { // false = overwrite
+            for (TuningRun run : runListView.getItems()) {
+                out.println(run.toCsvLine());
             }
+            controlValidationLabel.setText("Deleted scenario from " + tagName + ".tun");
+        } catch (IOException e) {
+            controlValidationLabel.setText("Delete failed: " + e.getMessage());
+        }
+    }
 
-            @Override
-            public String toString() { return name; } 
+    public static class TuningRun {
+        public String name;
+        public String horizon, kp, tau, deadtime;
+        public String kc, ti, td, eqType;
+        public String pvHi, pvLo, opHi, opLo;
+        public String dSP, dOP;
 
-            public String toCsvLine() {
-                return String.join("|", name, horizon, kp, tau, deadtime, kc, ti, td, eqType, pvHi, pvLo, opHi, opLo, dSP, dOP);
-            }
+        public TuningRun(String name, String horizon, String kp, String tau, String deadtime,
+                String kc, String ti, String td, String eqType,
+                String pvHi, String pvLo, String opHi, String opLo,
+                String dSP, String dOP) {
+            this.name = name;
+            this.horizon = horizon; this.kp = kp; this.tau = tau; this.deadtime = deadtime;
+            this.kc = kc; this.ti = ti; this.td = td; this.eqType = eqType;
+            this.pvHi = pvHi; this.pvLo = pvLo; this.opHi = opHi; this.opLo = opLo;
+            this.dSP = dSP; this.dOP = dOP;
+        }
 
-            public static TuningRun fromCsvLine(String line) {
-                String[] p = line.split("\\|");
-                return new TuningRun(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14]);
-            }
-    }       
+        @Override
+        public String toString() { return name; }
 
+        public String toCsvLine() {
+            return String.join("|", name, horizon, kp, tau, deadtime, kc, ti, td, eqType, pvHi, pvLo, opHi, opLo, dSP, dOP);
+        }
 
+        public static TuningRun fromCsvLine(String line) {
+            String[] p = line.split("\\|");
+            return new TuningRun(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14]);
+        }
+    }
 }
