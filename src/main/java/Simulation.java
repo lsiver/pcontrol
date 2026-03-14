@@ -130,8 +130,8 @@ public class Simulation {
         Queue<Double> deadtimeBuffer = new LinkedList<>();
         int delaySteps = (int) (process.deadtime / process.dt);
 
-        int i = 0;
-        for (double t = 0; t<= process.horizon; t+=process.dt) {
+        for (int i = 0; i<= length; i++) {
+            double t = i * process.dt;
             // Apply the setpoint step immediately
             //  the process buffer models deadtime.
             SP = dSP;
@@ -190,8 +190,6 @@ public class Simulation {
 
             OPdata[0][i] = (double) t;
             OPdata[1][i] = currentOP;
-
-            i+=1;
 
         }
 

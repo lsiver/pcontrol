@@ -1,4 +1,6 @@
 
+import org.jfree.chart.ChartPanel;
+
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -16,10 +18,12 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.embed.swing.SwingNode;
 
 public class Main extends Application {
     private static final double DEFAULT_DT = 0.1;
@@ -42,6 +46,8 @@ public class Main extends Application {
     private TextField dspField;
     private LineChart<Number, Number> pvSpChart;
     private LineChart<Number, Number> opChart;
+    private SwingNode openLoopSwingNode;
+    private SwingNode controlSwingNode;
 
     public static void main(String[] args) {
         launch(args);
@@ -193,14 +199,19 @@ public class Main extends Application {
         pvSpChart = createLineChart("PV vs SP", "Time", "Value");
         opChart = createLineChart("Controller Output (OP)", "Time", "% Output");
 
-        VBox charts = new VBox(16, pvSpChart, opChart);
-        charts.setPadding(new Insets(0, 0, 0, 16));
-        pvSpChart.setMinHeight(280);
-        opChart.setMinHeight(220);
+        controlSwingNode = new SwingNode();
+        controlSwingNode.prefWidth(800);
+        controlSwingNode.prefHeight(600);
+
+        // VBox charts = new VBox(16, pvSpChart, opChart);
+        // charts.setPadding(new Insets(0, 0, 0, 16));
+        // pvSpChart.setMinHeight(280);
+        // opChart.setMinHeight(220);
 
         BorderPane content = new BorderPane();
         content.setLeft(controls);
-        content.setCenter(charts);
+        // content.setCenter(charts);
+        content.setCenter(controlSwingNode);
 
         controls.prefWidthProperty().bind(content.widthProperty().multiply(0.25));
 
@@ -241,14 +252,33 @@ public class Main extends Application {
             Simulation simulation = new Simulation(pid, process);
             simulation.runSPChangeSim(dSP);
 
-            pvSpChart.getData().setAll(
-                    toSeries("Process Variable (PV)", simulation.getPVData()),
-                    toSeries("Setpoint (SP)", simulation.getSPData()));
-            opChart.getData().setAll(toSeries("OP Data", simulation.getOPData()));
+            // Use the Plotter to create the Swing panel
+            Plotter plotter = new Plotter();
+            ChartPanel chartPanel = plotter.createControlChart(
+                simulation.getPVData(), 
+                simulation.getSPData(), 
+                simulation.getOPData()
+            );
+
+            // Crucial: Set the content of the SwingNode on the Swing Thread
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                controlSwingNode.setContent(chartPanel);
+            });
+
             controlValidationLabel.setText("");
         } catch (IllegalArgumentException exception) {
             controlValidationLabel.setText(exception.getMessage());
         }
+
+
+        //     pvSpChart.getData().setAll(
+        //             toSeries("Process Variable (PV)", simulation.getPVData()),
+        //             toSeries("Setpoint (SP)", simulation.getSPData()));
+        //     opChart.getData().setAll(toSeries("OP Data", simulation.getOPData()));
+        //     controlValidationLabel.setText("");
+        // } catch (IllegalArgumentException exception) {
+        //     controlValidationLabel.setText(exception.getMessage());
+        // }
     }
 
     private Process buildProcessFromOpenLoopInputs() {
