@@ -20,8 +20,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
-import javafx.scene.control.Menu;
-import javafx.scene.control.MenuBar;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
@@ -59,9 +57,6 @@ public class Main extends Application {
     private ComboBox<String> equationTypeComboBox;
     private TextField dspField;
     private TextField distField;
-    private LineChart<Number, Number> pvSpChart;
-    private LineChart<Number, Number> opChart;
-    private SwingNode openLoopSwingNode;
     private SwingNode controlSwingNode;
     private SwingNode disturbSwingNode;
     private ListView<TuningRun> runListView;
