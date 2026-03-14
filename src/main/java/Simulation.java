@@ -22,7 +22,7 @@ public class Simulation {
         this.pid = pid;
     }
 
-    public void runSPChangeSim(double dSP) {
+    public void runSPChangeSim2(double dSP) {
         int length = (int) (process.horizon/process.dt);
         double[][] PVdata = new double[2][length+1];
         double[][] SPdata = new double[2][length+1];
@@ -77,6 +77,100 @@ public class Simulation {
             currentOP = Math.max(pid.opLo, Math.min(pid.opHi, currentOP));
 
             //Was after FOPDT but this would cause error = 0 at all times;
+            lastPV = currentPV;
+            lastError = error;
+
+            // 2. Handle Deadtime
+            deadtimeBuffer.add(currentOP);
+            double delayedOP = (deadtimeBuffer.size() > delaySteps) ? deadtimeBuffer.poll() : 0;
+
+            // 3. Process Model (FOPDT)
+            // PV_dot = (1/tau) * (Kp * OP_delayed - PV)
+            double pvChange = (process.dt / process.tau) * (process.Kp * delayedOP - currentPV);
+            currentPV += pvChange;
+
+            PVdata[0][i] = (double) t;
+            PVdata[1][i] = currentPV;
+
+            SPdata[0][i] = (double) t;
+            SPdata[1][i] = SP;
+
+            OPdata[0][i] = (double) t;
+            OPdata[1][i] = currentOP;
+
+            i+=1;
+
+        }
+
+        this.PVdata = PVdata;
+        this.SPdata = SPdata;
+        this.OPdata = OPdata;
+
+        this.plotOption = 1;
+        
+    }
+
+    public void runSPChangeSim(double dSP) {
+        int length = (int) (process.horizon/process.dt);
+        double[][] PVdata = new double[2][length+1];
+        double[][] SPdata = new double[2][length+1];
+        double[][] OPdata = new double[2][length+1];
+
+        double currentPV = 0;
+        double currentOP = 0;
+        double integralSum = 0;
+        double lastPV = 0;
+        double lastError = 0;
+        double SP = 0;
+        double pvRange = Math.abs(pid.pvHi - pid.pvLo);
+        double opRange = Math.abs(pid.opHi - pid.opLo);
+        double outputFrac = 0;
+
+
+        // Buffer for Deadtime
+        Queue<Double> deadtimeBuffer = new LinkedList<>();
+        int delaySteps = (int) (process.deadtime / process.dt);
+
+        int i = 0;
+        for (double t = 0; t<= process.horizon; t+=process.dt) {
+            // Apply the setpoint step immediately
+            //  the process buffer models deadtime.
+            SP = dSP;
+
+        // 1. Calculate Error and Changes
+            double error = (SP - currentPV) / pvRange;
+            double deltaPV = (currentPV - lastPV) / pvRange;
+            double deltaError = error - lastError;
+
+            double dP = 0;
+            double dI = 0;
+            double dD = 0;
+
+            // 2. Select Term Logic based on Equation Type
+            // Note: Constants are applied to the CHANGES in the signals
+            
+            // Integral is always on Error for A, B, and C
+            dI = (pid.Kc / pid.Ti) * error * process.dt;
+
+            if (pid.type.equals("A")) {
+                dP = pid.Kc * deltaError;
+                dD = pid.Kc * pid.Td * (deltaError / process.dt);
+            } else if (pid.type.equals("B")) {
+                dP = pid.Kc * deltaError; // P on Error
+                dD = -pid.Kc * pid.Td * (deltaPV / process.dt); // D on PV
+            } else { // Type C
+                dP = -pid.Kc * deltaPV; // P on PV
+                dD = -pid.Kc * pid.Td * (deltaPV / process.dt); // D on PV
+            }
+
+            // 3. Update the Output (The Incremental Step)
+            double deltaOP_Frac = dP + dI + dD;
+            currentOP += (deltaOP_Frac * opRange);
+
+            // 4. Constraints (Clamp to Engineering Units)
+            currentOP = Math.max(pid.opLo, Math.min(pid.opHi, currentOP));
+
+            // 5. Update state for next iteration
             lastPV = currentPV;
             lastError = error;
 
