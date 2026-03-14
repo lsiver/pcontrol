@@ -22,6 +22,7 @@ public class Simulation {
         this.pid = pid;
     }
 
+    //Probably no longer needed. Old Positional Form. Here for reference but probably will be removed in next major iteration.
     public void runSPChangeSim2(double dSP) {
         int length = (int) (process.horizon/process.dt);
         double[][] PVdata = new double[2][length+1];
@@ -201,6 +202,81 @@ public class Simulation {
         this.plotOption = 1;
         
     }
+
+    public void runDisturbanceSim(double loadStep) {
+        int length = (int) (process.horizon / process.dt);
+        double[][] PVdata = new double[2][length + 1];
+        double[][] SPdata = new double[2][length + 1];
+        double[][] OPdata = new double[2][length + 1];
+
+        double currentPV = 0;
+        double lastPV = 0;
+        double lastError = 0;
+        double currentOP = 0;
+        double SP = 0; // Control back to zero
+        
+        double pvRange = Math.abs(pid.pvHi - pid.pvLo);
+        double opRange = Math.abs(pid.opHi - pid.opLo);
+
+        Queue<Double> deadtimeBuffer = new LinkedList<>();
+        int delaySteps = (int) (process.deadtime / process.dt);
+
+        int i = 0;
+        for (double t = 0; t <= process.horizon; t += process.dt) {
+            
+            // 1. Controller Logic (Velocity Form)
+            double error = (SP - currentPV) / pvRange;
+            double deltaPV = (currentPV - lastPV) / pvRange;
+            double deltaError = error - lastError;
+
+            double dP = 0;
+            double dI = (pid.Kc / pid.Ti) * error * process.dt;
+            double dD = 0;
+
+            if (pid.type.equals("A")) {
+                dP = pid.Kc * deltaError;
+                dD = pid.Kc * pid.Td * (deltaError / process.dt);
+            } else if (pid.type.equals("B")) {
+                dP = pid.Kc * deltaError;
+                dD = -pid.Kc * pid.Td * (deltaPV / process.dt);
+            } else { // Type C
+                dP = -pid.Kc * deltaPV;
+                dD = -pid.Kc * pid.Td * (deltaPV / process.dt);
+            }
+
+            // Increment the controller's output position
+            currentOP += (dP + dI + dD) * opRange;
+            currentOP = Math.max(pid.opLo, Math.min(pid.opHi, currentOP));
+
+            // 2. The "Kick" - Combine Controller OP with the Disturbance
+            // Disturbance is in units of OP% (e.g., 5.0 = 5% of range)
+            double totalOPToProcess = currentOP + (loadStep * opRange / 100.0);
+            
+            // 3. Process Model
+            deadtimeBuffer.add(totalOPToProcess);
+            double delayedOP = (deadtimeBuffer.size() > delaySteps) ? deadtimeBuffer.poll() : 0;
+
+            double pvChange = (process.dt / process.tau) * (process.Kp * delayedOP - currentPV);
+            currentPV += pvChange;
+
+            // 4. Store Data
+            PVdata[0][i] = t;
+            PVdata[1][i] = currentPV;
+            SPdata[0][i] = t;
+            SPdata[1][i] = SP;
+            OPdata[0][i] = t;
+            OPdata[1][i] = currentOP;
+
+            lastPV = currentPV;
+            lastError = error;
+            i++;
+        }
+
+        this.PVdata = PVdata;
+        this.SPdata = SPdata;
+        this.OPdata = OPdata;
+        this.plotOption = 1; 
+}
 
     public void runOpenLoopSim() {
         int length = (int) (process.horizon/process.dt);
