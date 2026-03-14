@@ -121,9 +121,9 @@ The `PV` and `SP` traces share the left axis. `OP` is drawn on a second axis on 
 
 The simulator supports three controller equation variants:
 
-- `A`
-- `B`
-- `C`
+- Honeywell EQN `A`
+- Honeywell EQN `B`
+- Honeywell EQN `C`
 
 All three use incremental output updates in `runSPChangeSim()` and `runDisturbanceSim()`.
 
@@ -194,56 +194,6 @@ The simulation time step is fixed in the UI code:
 
 That value is used whenever a `Process` object is built from the input fields.
 
-## Data Model Classes
-
-### `Process`
-
-The `Process` class is a simple container for:
-
-- `dt`
-- `horizon`
-- `Kp`
-- `tau`
-- `deadtime`
-
-It does not contain simulation logic itself. It only stores process parameters.
-
-### `PID`
-
-The `PID` class is also a container. It stores:
-
-- `Kc`
-- `Ti`
-- `Td`
-- controller `type`
-- PV high/low limits
-- OP high/low limits
-
-### `Simulation`
-
-This class performs all numeric simulation work. It generates arrays for:
-
-- process variable data
-- setpoint data
-- output data
-
-It contains the methods for:
-
-- open-loop simulation
-- setpoint-step simulation
-- disturbance simulation
-
-### `Plotter`
-
-This class creates JFreeChart charts from the simulation arrays.
-
-It can build:
-
-- an open-loop process response chart
-- a setpoint-response chart with dual axes
-- a disturbance-response chart with dual axes
-
-In the current UI, the control charts are embedded into JavaFX via `SwingNode`.
 
 ## Library Tab
 
@@ -283,20 +233,6 @@ When a tuning is selected and applied, the program copies all saved values back 
 
 Double-clicking a saved run also applies it immediately.
 
-## Input Validation
-
-The UI validates user input before running simulations.
-
-Validation rules include:
-
-- fields must contain valid numbers
-- `Horizon` must be greater than `0`
-- `Ti` must be greater than `0`
-- `tau` must be greater than `0`
-- `Td` must be `0` or greater
-- `deadtime` must be `0` or greater
-
-If validation fails, the program shows a message in a red label on the relevant tab instead of running the simulation.
 
 ## What the Program Is Best For
 
@@ -313,9 +249,7 @@ It is useful for seeing how process dynamics and controller settings interact, e
 Based on the current implementation:
 
 - the process model is limited to a simple first-order-plus-deadtime style response
-- the simulation uses a fixed time step rather than a user-configurable solver step
 - saved tunings are plain text records, not a structured database
-- the UI assumes the control tab always uses the process values defined in the open-loop tab
 - the program focuses on visualization and manual experimentation rather than automatic tuning
 
 ## Summary
