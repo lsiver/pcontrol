@@ -1,4 +1,9 @@
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+
 import org.jfree.chart.ChartPanel;
 
 import javafx.application.Application;
@@ -11,6 +16,8 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuBar;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
@@ -68,6 +75,10 @@ public class Main extends Application {
         TabPane tabPane = new TabPane();
         tabPane.getTabs().add(createOpenLoopTab());
         tabPane.getTabs().add(createControlTab());
+
+        MenuBar menuBar = new MenuBar();
+        Menu fileMenu = new Menu("File");
+        
 
         BorderPane root = new BorderPane(tabPane);
         root.setPadding(new Insets(16));
@@ -346,6 +357,33 @@ public class Main extends Application {
             return Double.parseDouble(rawValue.trim());
         } catch (NumberFormatException exception) {
             throw new IllegalArgumentException(fieldName + " must be a valid number.");
+        }
+    }
+
+    private void addRunToLibrary(String loopName) {
+        TuningRun run = new TuningRun(
+            "Run " + System.currentTimeMillis(),
+            parseDouble(horizonField.getText(), "Horizon"),
+            parseDouble(kpField.getText(), "kp"),
+            parseDouble(tauField.getText(), "tau"),
+            parseDouble(deadtimeField.getText(), "deadtime"),
+            parseDouble(controllerKcField.getText(), "Kc"),
+            parseDouble(tiField.getText(), "Ti"),
+            parseDouble(tdField.getText(), "Td"),
+            parseDouble(pvHiField.getText(), "pvHi"),
+            parseDouble(pvLoField.getText(), "pvLo"),
+            parseDouble(opHiField.getText(), "opHi"),
+            parseDouble(opLoField.getText(), "opLo"),
+            equationTypeComboBox.getValue(),
+            parseDouble(dspField.getText(), "dSP"),
+            parseDouble(distField.getText(), "dOP")
+            );
+
+        try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(loopName + ".csv", true)))) {
+            out.println(run.toString());
+            controlValidationLabel.setText("Run saved to " + loopName + ".csv");
+        } catch (IOException e) {
+            controlValidationLabel.setText("Error Saving: " + e.getMessage());
         }
     }
 }
