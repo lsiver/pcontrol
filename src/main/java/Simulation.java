@@ -118,13 +118,11 @@ public class Simulation {
 
         double currentPV = 0;
         double currentOP = 0;
-        double integralSum = 0;
         double lastPV = 0;
         double lastError = 0;
         double SP = 0;
         double pvRange = Math.abs(pid.pvHi - pid.pvLo);
         double opRange = Math.abs(pid.opHi - pid.opLo);
-        double outputFrac = 0;
 
 
         // Buffer for Deadtime
