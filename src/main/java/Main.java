@@ -212,7 +212,7 @@ public class Main extends Application {
     private void replotOpenLoop() {
         try {
             Process process = buildProcessFromOpenLoopInputs();
-            PID pid = new PID(0.0, 0.0, 0.0, "B");
+            PID pid = new PID(0.0, 0.0, 0.0, "B", 100.0, 0.0, 100.0, 0.0);
             Simulation simulation = new Simulation(pid, process);
             simulation.runOpenLoopSim();
 
@@ -232,7 +232,12 @@ public class Main extends Application {
             double dSP = parseDouble(dspField.getText(), "dSP");
             String equationType = equationTypeComboBox.getValue();
 
-            PID pid = new PID(controllerKp, ti, td, equationType);
+            double pvHi = parseDouble(pvHiField.getText(), "PV Hi");
+            double pvLo = parseDouble(pvLoField.getText(), "PV Lo");
+            double opHi = parseDouble(opHiField.getText(), "OP Hi");
+            double opLo = parseDouble(opLoField.getText(), "OP Lo");
+
+            PID pid = new PID(controllerKp, ti, td, equationType, pvHi, pvLo, opHi, opLo);
             Simulation simulation = new Simulation(pid, process);
             simulation.runSPChangeSim(dSP);
 

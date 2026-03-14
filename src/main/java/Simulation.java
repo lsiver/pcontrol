@@ -34,6 +34,10 @@ public class Simulation {
         double lastPV = 0;
         double lastError = 0;
         double SP = 0;
+        double pvRange = Math.abs(pid.pvHi - pid.pvLo);
+        double opRange = Math.abs(pid.opHi - pid.opLo);
+        double outputFrac = 0;
+
 
         // Buffer for Deadtime
         Queue<Double> deadtimeBuffer = new LinkedList<>();
@@ -45,8 +49,8 @@ public class Simulation {
             //  the process buffer models deadtime.
             SP = dSP;
 
-            double error = SP - currentPV;
-            double dPV = (currentPV - lastPV) / process.dt;
+            double error = (SP - currentPV) / pvRange ;
+            double dPV = ((currentPV - lastPV) / process.dt) / pvRange ;
             double dE = (error - lastError) / process.dt;
 
             double pTerm, iTerm, dTerm;
@@ -61,14 +65,16 @@ public class Simulation {
                 pTerm = pid.Kc * error;
                 dTerm = -pid.Kc * pid.Td * dPV; // D on PV
             } else { // Type C
-                pTerm = -pid.Kc * currentPV; // P on PV
+                pTerm = -pid.Kc * currentPV / pvRange; // P on PV
                 dTerm = -pid.Kc * pid.Td * dPV; // D on PV
             }
 
-            currentOP = pTerm + iTerm + dTerm;
+            outputFrac = pTerm +iTerm + dTerm;
+            currentOP = outputFrac * opRange;
+            // currentOP = (pTerm + iTerm + dTerm);
             
             // Clamp OP (0-100%)
-            currentOP = Math.max(0, Math.min(100, currentOP));
+            currentOP = Math.max(pid.opLo, Math.min(pid.opHi, currentOP));
 
             //Was after FOPDT but this would cause error = 0 at all times;
             lastPV = currentPV;
