@@ -236,15 +236,11 @@ Double-clicking a saved run also applies it immediately.
 
 ## What the Program Is Best For
 
-This program is best understood as:
-
-- a process-control learning tool
-- a quick PID tuning visualizer
-- a side-by-side comparison tool for open-loop and closed-loop behavior
+This program is best understood as a quick PID tuning visualizer to aid in tunign loops.
 
 It is useful for seeing how process dynamics and controller settings interact, especially for first-order systems with deadtime.
 
-## Current Limitations Visible in the Code
+## Current Limitations
 
 Based on the current implementation:
 
