@@ -72,7 +72,6 @@ public class Simulation {
 
             outputFrac = pTerm +iTerm + dTerm;
             currentOP = outputFrac * opRange;
-            // currentOP = (pTerm + iTerm + dTerm);
             
             // Clamp OP (0-100%)
             currentOP = Math.max(pid.opLo, Math.min(pid.opHi, currentOP));
@@ -81,11 +80,11 @@ public class Simulation {
             lastPV = currentPV;
             lastError = error;
 
-            // 2. Handle Deadtime
+            // Handle Deadtime
             deadtimeBuffer.add(currentOP);
             double delayedOP = (deadtimeBuffer.size() > delaySteps) ? deadtimeBuffer.poll() : 0;
 
-            // 3. Process Model (FOPDT)
+            // Process Model (FOPDT)
             // PV_dot = (1/tau) * (Kp * OP_delayed - PV)
             double pvChange = (process.dt / process.tau) * (process.Kp * delayedOP - currentPV);
             currentPV += pvChange;
@@ -137,7 +136,7 @@ public class Simulation {
             //  the process buffer models deadtime.
             SP = dSP;
 
-        // 1. Calculate Error and Changes
+        // Calculate Error and Changes
             double error = (SP - currentPV) / pvRange;
             double deltaPV = (currentPV - lastPV) / pvRange;
             double deltaError = error - lastError;
@@ -146,8 +145,8 @@ public class Simulation {
             double dI = 0;
             double dD = 0;
 
-            // 2. Select Term Logic based on Equation Type
-            // Note: Constants are applied to the CHANGES in the signals
+            // Select Term Logic based on Equation Type
+            // Constants are applied to the CHANGES in the signals
             
             // Integral is always on Error for A, B, and C
             dI = (pid.Kc / pid.Ti) * error * process.dt;
@@ -163,22 +162,22 @@ public class Simulation {
                 dD = -pid.Kc * pid.Td * (deltaPV / process.dt); // D on PV
             }
 
-            // 3. Update the Output (The Incremental Step)
+            // Update the Output 
             double deltaOP_Frac = dP + dI + dD;
             currentOP += (deltaOP_Frac * opRange);
 
-            // 4. Constraints (Clamp to Engineering Units)
+            // Constraints 
             currentOP = Math.max(pid.opLo, Math.min(pid.opHi, currentOP));
 
-            // 5. Update state for next iteration
+            // Update state for next iteration
             lastPV = currentPV;
             lastError = error;
 
-            // 2. Handle Deadtime
+            // Handle Deadtime
             deadtimeBuffer.add(currentOP);
             double delayedOP = (deadtimeBuffer.size() > delaySteps) ? deadtimeBuffer.poll() : 0;
 
-            // 3. Process Model (FOPDT)
+            // Process Model (FOPDT)
             // PV_dot = (1/tau) * (Kp * OP_delayed - PV)
             double pvChange = (process.dt / process.tau) * (process.Kp * delayedOP - currentPV);
             currentPV += pvChange;
@@ -212,7 +211,7 @@ public class Simulation {
         double currentPV = 0;
         double lastPV = 0;
         double lastError = 0;
-        double currentOP = loadStep; // The controller starts at 0 balance
+        double currentOP = loadStep; 
         double SP = 0; 
 
         double pvRange = Math.abs(pid.pvHi - pid.pvLo);
@@ -224,24 +223,21 @@ public class Simulation {
         for (int i = 0; i <= length; i++) {
             double t = i * process.dt;
 
-            // --- 1. PROCESS UPDATE (The "Plant" runs first) ---
-            // We push the OP into the buffer
+            //push the OP into the buffer
             deadtimeBuffer.add(currentOP);
             
-            // We pull the delayed OP. If buffer isn't full, we assume the disturbance 'loadStep'
+            // pull the delayed OP. If buffer isn't full, assume the disturbance 'loadStep'
             // is what the process sees initially at t=0.
             double delayedOP = (deadtimeBuffer.size() > delaySteps) ? deadtimeBuffer.poll() : loadStep;
 
             double pvChange = (process.dt / process.tau) * (process.Kp * delayedOP - currentPV);
             currentPV += pvChange;
 
-            // --- 2. CALCULATE DELTAS ---
-            // Now currentPV has moved relative to lastPV, so deltaPV is non-zero
+            // currentPV has moved relative to lastPV, so deltaPV is non-zero
             double error = (SP - currentPV) / pvRange;
             double deltaPV = (currentPV - lastPV) / pvRange;
             double deltaError = error - lastError;
 
-            // --- 3. PID CALCULATION ---
             double dP = 0;
             double dI = (pid.Kc / pid.Ti) * error * process.dt;
             double dD = 0;
@@ -257,11 +253,9 @@ public class Simulation {
                 dD = -pid.Kc * pid.Td * (deltaPV / process.dt);
             }
 
-            // --- 4. OUTPUT UPDATE ---
             currentOP += (dP + dI + dD) * opRange;
             currentOP = Math.max(pid.opLo, Math.min(pid.opHi, currentOP));
 
-            // --- 5. DATA STORAGE ---
             PVdata[0][i] = t;
             PVdata[1][i] = currentPV;
             SPdata[0][i] = t;
@@ -269,7 +263,6 @@ public class Simulation {
             OPdata[0][i] = t;
             OPdata[1][i] = currentOP;
 
-            // Sync for next iteration
             lastPV = currentPV;
             lastError = error;
         }

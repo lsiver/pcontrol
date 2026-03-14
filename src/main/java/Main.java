@@ -1,5 +1,8 @@
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -16,8 +19,10 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
+import javafx.scene.control.Separator;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
@@ -29,12 +34,14 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.embed.swing.SwingNode;
 
 public class Main extends Application {
     private static final double DEFAULT_DT = 0.05;
 
+    private TabPane tabPane;
     private TextField horizonField;
     private TextField kpField;
     private TextField tauField;
@@ -57,6 +64,8 @@ public class Main extends Application {
     private SwingNode openLoopSwingNode;
     private SwingNode controlSwingNode;
     private SwingNode disturbSwingNode;
+    private ListView<TuningRun> runListView;
+    private TextField loopNameField;
 
     public static void main(String[] args) {
         launch(args);
@@ -72,13 +81,10 @@ public class Main extends Application {
     }
 
     private BorderPane buildRoot() {
-        TabPane tabPane = new TabPane();
+        tabPane = new TabPane();
         tabPane.getTabs().add(createOpenLoopTab());
         tabPane.getTabs().add(createControlTab());
-
-        MenuBar menuBar = new MenuBar();
-        Menu fileMenu = new Menu("File");
-        
+        tabPane.getTabs().add(createLibraryTab());
 
         BorderPane root = new BorderPane(tabPane);
         root.setPadding(new Insets(16));
@@ -114,7 +120,6 @@ public class Main extends Application {
         VBox controls = new VBox(14,
                 new Label("Open Loop Parameters"),
                 inputGrid,
-                // new Label("dt is fixed at 0.1 seconds."),
                 replotButton,
                 openLoopValidationLabel);
         controls.setAlignment(Pos.TOP_LEFT);
@@ -238,6 +243,70 @@ public class Main extends Application {
         return controlTab;
     }
 
+private Tab createLibraryTab() {
+    loopNameField = new TextField("XXTCXXX");
+    runListView = new ListView<>();
+    
+    Button loadFileButton = new Button("Browse Files...");
+    loadFileButton.setOnAction(e -> loadLoopFile());
+
+    Button saveCurrentButton = new Button("Snapshot Current Tuning");
+    saveCurrentButton.setStyle("-fx-base: #2ecc71;");
+    saveCurrentButton.setMaxWidth(Double.MAX_VALUE);
+    saveCurrentButton.setOnAction(e -> saveCurrentRun());
+
+    Button applyButton = new Button("Apply Selected Tuning");
+    applyButton.setStyle("-fx-base: #3498db; -fx-text-fill: white; -fx-font-weight: bold;");
+    applyButton.setMaxWidth(Double.MAX_VALUE);
+    applyButton.setOnAction(e -> {
+        TuningRun selected = runListView.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            applyRunToFields(selected);
+            replotControl();
+            if (tabPane != null) tabPane.getSelectionModel().select(1);
+        }
+    });
+
+    Button deleteButton = new Button("Delete Selected Tuning");
+    deleteButton.setStyle("-fx-base: #e74c3c; -fx-text-fill: white;");
+    deleteButton.setMaxWidth(Double.MAX_VALUE);
+    deleteButton.setOnAction(e -> deleteSelectedRun());
+
+    runListView.setOnMouseClicked(event -> {
+        if (event.getClickCount() == 2) {
+            TuningRun selected = runListView.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                applyRunToFields(selected);
+                replotControl();
+                tabPane.getSelectionModel().select(1);
+            }
+        }
+    });
+
+    VBox layout = new VBox(15, 
+        new Label("LOAD LOOP"),
+        new HBox(10, new Label("Current Loop:"), loopNameField, loadFileButton),
+        new Separator(),
+        new Label("SAVED TUNINGS"),
+        runListView,
+        new HBox(10, applyButton, deleteButton), 
+        new Separator(),
+        saveCurrentButton
+    );
+    
+    HBox.setHgrow(applyButton, Priority.ALWAYS);
+    HBox.setHgrow(deleteButton, Priority.ALWAYS);
+    
+    layout.setPadding(new Insets(20));
+    VBox.setVgrow(runListView, Priority.ALWAYS);
+
+    Tab libraryTab = new Tab("Library", layout);
+    libraryTab.setClosable(false);
+    return libraryTab;
+
+}
+
+
     private void replotOpenLoop() {
         try {
             Process process = buildProcessFromOpenLoopInputs();
@@ -360,30 +429,136 @@ public class Main extends Application {
         }
     }
 
-    private void addRunToLibrary(String loopName) {
-        TuningRun run = new TuningRun(
-            "Run " + System.currentTimeMillis(),
-            parseDouble(horizonField.getText(), "Horizon"),
-            parseDouble(kpField.getText(), "kp"),
-            parseDouble(tauField.getText(), "tau"),
-            parseDouble(deadtimeField.getText(), "deadtime"),
-            parseDouble(controllerKcField.getText(), "Kc"),
-            parseDouble(tiField.getText(), "Ti"),
-            parseDouble(tdField.getText(), "Td"),
-            parseDouble(pvHiField.getText(), "pvHi"),
-            parseDouble(pvLoField.getText(), "pvLo"),
-            parseDouble(opHiField.getText(), "opHi"),
-            parseDouble(opLoField.getText(), "opLo"),
-            equationTypeComboBox.getValue(),
-            parseDouble(dspField.getText(), "dSP"),
-            parseDouble(distField.getText(), "dOP")
-            );
-
-        try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(loopName + ".csv", true)))) {
-            out.println(run.toString());
-            controlValidationLabel.setText("Run saved to " + loopName + ".csv");
-        } catch (IOException e) {
-            controlValidationLabel.setText("Error Saving: " + e.getMessage());
-        }
+    private void applyRunToFields(TuningRun run) {
+        horizonField.setText(run.horizon);
+        kpField.setText(run.kp);
+        tauField.setText(run.tau);
+        deadtimeField.setText(run.deadtime);
+        controllerKcField.setText(run.kc);
+        tiField.setText(run.ti);
+        tdField.setText(run.td);
+        equationTypeComboBox.setValue(run.eqType);
+        pvHiField.setText(run.pvHi);
+        pvLoField.setText(run.pvLo);
+        opHiField.setText(run.opHi);
+        opLoField.setText(run.opLo);
+        dspField.setText(run.dSP);
+        distField.setText(run.dOP);
     }
+
+private void saveCurrentRun() {
+    String tagName = loopNameField.getText().trim();
+    if (tagName.isEmpty()) {
+        controlValidationLabel.setText("Please enter a Loop Tag name first.");
+        return;
+    }
+
+    String scenarioName = "Run " + (runListView.getItems().size() + 1) + " (Kc=" + controllerKcField.getText() + ")" + 
+    " (Ti=" + tiField.getText() + ")" + " (Td=" + tdField.getText() + ")" + " (SimTime=" + horizonField.getText() + ")";
+    
+    TuningRun run = new TuningRun(scenarioName, 
+        horizonField.getText(), kpField.getText(), tauField.getText(), deadtimeField.getText(),
+        controllerKcField.getText(), tiField.getText(), tdField.getText(), equationTypeComboBox.getValue(),
+        pvHiField.getText(), pvLoField.getText(), opHiField.getText(), opLoField.getText(),
+        dspField.getText(), distField.getText()
+    );
+
+    runListView.getItems().add(run);
+    
+    // Save to the filename specified in the Loop Tag field
+    File file = new File(tagName + ".tun");
+    try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(file, true)))) {
+        out.println(run.toCsvLine());
+        controlValidationLabel.setText("Saved to " + file.getAbsolutePath());
+    } catch (IOException e) {
+        controlValidationLabel.setText("Save failed: " + e.getMessage());
+    }
+}
+
+    private void loadLoopFile() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Open Tuning Loop File");
+        
+        // Set the extension filter
+        fileChooser.getExtensionFilters().add(
+            new FileChooser.ExtensionFilter("Tuning Files", "*.tun", "*.txt")
+        );
+
+        // Show the dialog
+        File selectedFile = fileChooser.showOpenDialog(tabPane.getScene().getWindow());
+
+        if (selectedFile != null) {
+            // Update the Loop Tag field to match the chosen filename (minus extension)
+            String fileName = selectedFile.getName().replaceFirst("[.][^.]+$", "");
+            loopNameField.setText(fileName);
+
+            runListView.getItems().clear();
+            try (BufferedReader br = new BufferedReader(new FileReader(selectedFile))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    if (!line.trim().isEmpty()) {
+                        runListView.getItems().add(TuningRun.fromCsvLine(line));
+                    }
+                }
+                controlValidationLabel.setText("Loaded " + runListView.getItems().size() + " scenarios.");
+            } catch (IOException e) {
+                controlValidationLabel.setText("Error reading file: " + e.getMessage());
+            }
+        }
+}
+
+private void deleteSelectedRun() {
+    TuningRun selected = runListView.getSelectionModel().getSelectedItem();
+    if (selected == null) return;
+
+    // Remove from the UI list
+    runListView.getItems().remove(selected);
+
+    // Overwrite the file with the remaining list items
+    String tagName = loopNameField.getText().trim();
+    if (tagName.isEmpty()) return;
+
+    File file = new File(tagName + ".tun");
+    try (PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(file, false)))) { // false = overwrite
+        for (TuningRun run : runListView.getItems()) {
+            out.println(run.toCsvLine());
+        }
+        controlValidationLabel.setText("Deleted scenario from " + tagName + ".tun");
+    } catch (IOException e) {
+        controlValidationLabel.setText("Delete failed: " + e.getMessage());
+    }
+}
+
+        public static class TuningRun {
+            public String name;
+            public String horizon, kp, tau, deadtime; 
+            public String kc, ti, td, eqType;         
+            public String pvHi, pvLo, opHi, opLo;     
+            public String dSP, dOP;                   
+
+            public TuningRun(String name, String horizon, String kp, String tau, String deadtime,
+                            String kc, String ti, String td, String eqType,
+                            String pvHi, String pvLo, String opHi, String opLo,
+                            String dSP, String dOP) {
+                this.name = name;
+                this.horizon = horizon; this.kp = kp; this.tau = tau; this.deadtime = deadtime;
+                this.kc = kc; this.ti = ti; this.td = td; this.eqType = eqType;
+                this.pvHi = pvHi; this.pvLo = pvLo; this.opHi = opHi; this.opLo = opLo;
+                this.dSP = dSP; this.dOP = dOP;
+            }
+
+            @Override
+            public String toString() { return name; } 
+
+            public String toCsvLine() {
+                return String.join("|", name, horizon, kp, tau, deadtime, kc, ti, td, eqType, pvHi, pvLo, opHi, opLo, dSP, dOP);
+            }
+
+            public static TuningRun fromCsvLine(String line) {
+                String[] p = line.split("\\|");
+                return new TuningRun(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14]);
+            }
+    }       
+
+
 }

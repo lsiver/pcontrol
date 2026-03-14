@@ -10,8 +10,6 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.StandardXYItemRenderer;
 import org.jfree.data.xy.DefaultXYDataset;
 
-import javafx.scene.paint.Color;
-
 public class Plotter extends JFrame {
     
     public Plotter() {
@@ -57,7 +55,7 @@ public class Plotter extends JFrame {
     }
 
     public ChartPanel createControlChart(double[][] pv, double[][] sp, double[][] op) {
-        // 1. Create Datasets
+        // Create Datasets
         DefaultXYDataset pvSpDataset = new DefaultXYDataset();
         pvSpDataset.addSeries("PV", pv);
         pvSpDataset.addSeries("SP", sp);
@@ -65,13 +63,12 @@ public class Plotter extends JFrame {
         DefaultXYDataset opDataset = new DefaultXYDataset();
         opDataset.addSeries("OP", op);
 
-        // 2. Setup Axes
+        // Setup Axes
         NumberAxis timeAxis = new NumberAxis("Time (min)");
         NumberAxis pvAxis = new NumberAxis("Process Variable / Setpoint");
         NumberAxis opAxis = new NumberAxis("Controller Output (%)");
-        // opAxis.setRange(0.0, 100.0); // Fixed range for OP
 
-        // 3. Create Plot and Map Datasets
+        // Create Plot and Map Datasets
         XYPlot plot = new XYPlot();
         plot.setDomainAxis(timeAxis);
         
@@ -87,16 +84,13 @@ public class Plotter extends JFrame {
         
         // Map Dataset 1 (OP) to Axis 1 (Right)
         plot.mapDatasetToRangeAxis(1, 1);
-
-        // Optional: Customizing colors
-        // plot.getRenderer(1).setSeriesPaint(0, Color.GRAY); 
 
         JFreeChart chart = new JFreeChart("Setpoint Change Response", JFreeChart.DEFAULT_TITLE_FONT, plot, true);
         return new ChartPanel(chart);
     }
 
     public ChartPanel createDisturbChart(double[][] pv, double[][] sp, double[][] op) {
-        // 1. Create Datasets
+        // Create Datasets
         DefaultXYDataset pvSpDataset = new DefaultXYDataset();
         pvSpDataset.addSeries("PV", pv);
         pvSpDataset.addSeries("SP", sp);
@@ -104,13 +98,12 @@ public class Plotter extends JFrame {
         DefaultXYDataset opDataset = new DefaultXYDataset();
         opDataset.addSeries("OP", op);
 
-        // 2. Setup Axes
+        // Setup Axes
         NumberAxis timeAxis = new NumberAxis("Time (min)");
         NumberAxis pvAxis = new NumberAxis("Process Variable / Setpoint");
         NumberAxis opAxis = new NumberAxis("Controller Output (%)");
-        // opAxis.setRange(0.0, 100.0); // Fixed range for OP
 
-        // 3. Create Plot and Map Datasets
+        // Create Plot and Map Datasets
         XYPlot plot = new XYPlot();
         plot.setDomainAxis(timeAxis);
         
@@ -126,9 +119,6 @@ public class Plotter extends JFrame {
         
         // Map Dataset 1 (OP) to Axis 1 (Right)
         plot.mapDatasetToRangeAxis(1, 1);
-
-        // Optional: Customizing colors
-        // plot.getRenderer(1).setSeriesPaint(0, Color.GRAY); 
 
         JFreeChart chart = new JFreeChart("Disturbance Response", JFreeChart.DEFAULT_TITLE_FONT, plot, true);
         return new ChartPanel(chart);
