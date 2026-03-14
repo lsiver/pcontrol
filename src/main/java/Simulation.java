@@ -122,6 +122,7 @@ public class Simulation {
         double lastPV = 0;
         double lastError = 0;
         double SP = 0;
+
         double pvRange = Math.abs(pid.pvHi - pid.pvLo);
         double opRange = Math.abs(pid.opHi - pid.opLo);
 
@@ -207,26 +208,40 @@ public class Simulation {
         double[][] SPdata = new double[2][length + 1];
         double[][] OPdata = new double[2][length + 1];
 
+        // Initial Conditions
         double currentPV = 0;
         double lastPV = 0;
         double lastError = 0;
-        double currentOP = 0;
-        double SP = 0; // Control back to zero
-        
+        double currentOP = loadStep; // The controller starts at 0 balance
+        double SP = 0; 
+
         double pvRange = Math.abs(pid.pvHi - pid.pvLo);
         double opRange = Math.abs(pid.opHi - pid.opLo);
 
         Queue<Double> deadtimeBuffer = new LinkedList<>();
         int delaySteps = (int) (process.deadtime / process.dt);
 
-        int i = 0;
-        for (double t = 0; t <= process.horizon; t += process.dt) {
+        for (int i = 0; i <= length; i++) {
+            double t = i * process.dt;
+
+            // --- 1. PROCESS UPDATE (The "Plant" runs first) ---
+            // We push the OP into the buffer
+            deadtimeBuffer.add(currentOP);
             
-            // 1. Controller Logic (Velocity Form)
+            // We pull the delayed OP. If buffer isn't full, we assume the disturbance 'loadStep'
+            // is what the process sees initially at t=0.
+            double delayedOP = (deadtimeBuffer.size() > delaySteps) ? deadtimeBuffer.poll() : loadStep;
+
+            double pvChange = (process.dt / process.tau) * (process.Kp * delayedOP - currentPV);
+            currentPV += pvChange;
+
+            // --- 2. CALCULATE DELTAS ---
+            // Now currentPV has moved relative to lastPV, so deltaPV is non-zero
             double error = (SP - currentPV) / pvRange;
             double deltaPV = (currentPV - lastPV) / pvRange;
             double deltaError = error - lastError;
 
+            // --- 3. PID CALCULATION ---
             double dP = 0;
             double dI = (pid.Kc / pid.Ti) * error * process.dt;
             double dD = 0;
@@ -242,22 +257,11 @@ public class Simulation {
                 dD = -pid.Kc * pid.Td * (deltaPV / process.dt);
             }
 
-            // Increment the controller's output position
+            // --- 4. OUTPUT UPDATE ---
             currentOP += (dP + dI + dD) * opRange;
             currentOP = Math.max(pid.opLo, Math.min(pid.opHi, currentOP));
 
-            // 2. The "Kick" - Combine Controller OP with the Disturbance
-            // Disturbance is in units of OP% (e.g., 5.0 = 5% of range)
-            double totalOPToProcess = currentOP + (loadStep * opRange / 100.0);
-            
-            // 3. Process Model
-            deadtimeBuffer.add(totalOPToProcess);
-            double delayedOP = (deadtimeBuffer.size() > delaySteps) ? deadtimeBuffer.poll() : 0;
-
-            double pvChange = (process.dt / process.tau) * (process.Kp * delayedOP - currentPV);
-            currentPV += pvChange;
-
-            // 4. Store Data
+            // --- 5. DATA STORAGE ---
             PVdata[0][i] = t;
             PVdata[1][i] = currentPV;
             SPdata[0][i] = t;
@@ -265,9 +269,9 @@ public class Simulation {
             OPdata[0][i] = t;
             OPdata[1][i] = currentOP;
 
+            // Sync for next iteration
             lastPV = currentPV;
             lastError = error;
-            i++;
         }
 
         this.PVdata = PVdata;

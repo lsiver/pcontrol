@@ -26,7 +26,7 @@ import javafx.stage.Stage;
 import javafx.embed.swing.SwingNode;
 
 public class Main extends Application {
-    private static final double DEFAULT_DT = 0.1;
+    private static final double DEFAULT_DT = 0.05;
 
     private TextField horizonField;
     private TextField kpField;
@@ -35,7 +35,7 @@ public class Main extends Application {
     private Label openLoopValidationLabel;
     private Label controlValidationLabel;
     private LineChart<Number, Number> openLoopChart;
-    private TextField controllerKpField;
+    private TextField controllerKcField;
     private TextField tiField;
     private TextField tdField;
     private TextField pvHiField;
@@ -44,10 +44,12 @@ public class Main extends Application {
     private TextField opLoField;
     private ComboBox<String> equationTypeComboBox;
     private TextField dspField;
+    private TextField distField;
     private LineChart<Number, Number> pvSpChart;
     private LineChart<Number, Number> opChart;
     private SwingNode openLoopSwingNode;
     private SwingNode controlSwingNode;
+    private SwingNode disturbSwingNode;
 
     public static void main(String[] args) {
         launch(args);
@@ -123,7 +125,7 @@ public class Main extends Application {
     }
 
     private Tab createControlTab() {
-        controllerKpField = new TextField("0.35");
+        controllerKcField = new TextField("0.35");
         tiField = new TextField("3.0");
         tdField = new TextField("0.0");
         pvHiField = new TextField("100");
@@ -132,6 +134,7 @@ public class Main extends Application {
         opLoField = new TextField("0");
 
         dspField = new TextField("5.0");
+        distField = new TextField("2.0");
         equationTypeComboBox = new ComboBox<>();
         equationTypeComboBox.getItems().addAll("A", "B", "C");
         equationTypeComboBox.setValue("B");
@@ -154,16 +157,11 @@ public class Main extends Application {
         GridPane inputGrid = new GridPane();
         inputGrid.setHgap(10);
         inputGrid.setVgap(12);
-        inputGrid.addRow(0, new Label("Kp"), controllerKpField);
+        inputGrid.addRow(0, new Label("Kc"), controllerKcField);
         inputGrid.addRow(1, new Label("Ti"), tiField);
         inputGrid.addRow(2, new Label("Td"), tdField);
         inputGrid.addRow(3, new Label("Equation"), equationTypeComboBox);
         inputGrid.getColumnConstraints().addAll(col1, col2);
-
-        GridPane spGrid = new GridPane();
-        spGrid.setHgap(10);
-        spGrid.setVgap(12);
-        spGrid.addRow(0, new Label("dSP"), dspField);
 
         GridPane limitsGrid = new GridPane();
         limitsGrid.setHgap(10);
@@ -174,6 +172,15 @@ public class Main extends Application {
         limitsGrid.addRow(3, new Label("OP Lo"), opLoField);
         limitsGrid.getColumnConstraints().addAll(col1, col2);
 
+        GridPane spGrid = new GridPane();
+        spGrid.setHgap(10);
+        spGrid.setVgap(12);
+        spGrid.addRow(0, new Label("dSP"), dspField);
+
+        GridPane distGrid  = new GridPane();
+        distGrid.setHgap(10);
+        distGrid.setVgap(12);
+        distGrid.addRow(0,new Label("dOP"), distField);
 
         Label infoLabel = new Label("Process values come from the Open Loop tab");
         infoLabel.setWrapText(true);
@@ -186,6 +193,8 @@ public class Main extends Application {
                 limitsGrid,
                 new Label("Setpoint Change"),
                 spGrid,
+                new Label("Disturbance Kick"),
+                distGrid,
                 replotButton,
                 controlValidationLabel);
 
@@ -196,22 +205,20 @@ public class Main extends Application {
         controls.setMinWidth(150);
         controls.setMaxWidth(280);
 
-        pvSpChart = createLineChart("PV vs SP", "Time", "Value");
-        opChart = createLineChart("Controller Output (OP)", "Time", "% Output");
-
         controlSwingNode = new SwingNode();
         controlSwingNode.prefWidth(800);
         controlSwingNode.prefHeight(600);
 
-        // VBox charts = new VBox(16, pvSpChart, opChart);
-        // charts.setPadding(new Insets(0, 0, 0, 16));
-        // pvSpChart.setMinHeight(280);
-        // opChart.setMinHeight(220);
+        disturbSwingNode = new SwingNode();
+        disturbSwingNode.prefWidth(800);
+        disturbSwingNode.prefHeight(600);
+
+        VBox charts = new VBox(16,controlSwingNode, disturbSwingNode);
+        charts.setPadding(new Insets(0, 0, 0, 16));
 
         BorderPane content = new BorderPane();
         content.setLeft(controls);
-        // content.setCenter(charts);
-        content.setCenter(controlSwingNode);
+        content.setCenter(charts);
 
         controls.prefWidthProperty().bind(content.widthProperty().multiply(0.25));
 
@@ -237,48 +244,48 @@ public class Main extends Application {
     private void replotControl() {
         try {
             Process process = buildProcessFromOpenLoopInputs();
-            double controllerKp = parseDouble(controllerKpField.getText(), "Kp");
+            double controllerKc = parseDouble(controllerKcField.getText(), "Kc");
             double ti = parsePositiveDouble(tiField.getText(), "Ti");
             double td = parseNonNegativeDouble(tdField.getText(), "Td");
             double dSP = parseDouble(dspField.getText(), "dSP");
             String equationType = equationTypeComboBox.getValue();
+            double dOP = parseDouble(distField.getText(), "dOP");
 
             double pvHi = parseDouble(pvHiField.getText(), "PV Hi");
             double pvLo = parseDouble(pvLoField.getText(), "PV Lo");
             double opHi = parseDouble(opHiField.getText(), "OP Hi");
             double opLo = parseDouble(opLoField.getText(), "OP Lo");
 
-            PID pid = new PID(controllerKp, ti, td, equationType, pvHi, pvLo, opHi, opLo);
+            PID pid = new PID(controllerKc, ti, td, equationType, pvHi, pvLo, opHi, opLo);
             Simulation simulation = new Simulation(pid, process);
             simulation.runSPChangeSim(dSP);
 
             // Use the Plotter to create the Swing panel
             Plotter plotter = new Plotter();
-            ChartPanel chartPanel = plotter.createControlChart(
+            ChartPanel spChart = plotter.createControlChart(
                 simulation.getPVData(), 
                 simulation.getSPData(), 
                 simulation.getOPData()
             );
 
-            // Crucial: Set the content of the SwingNode on the Swing Thread
+            simulation.runDisturbanceSim(dOP);
+            ChartPanel distChart = plotter.createDisturbChart(
+                simulation.getPVData(), 
+                simulation.getSPData(), 
+                simulation.getOPData()
+            );
+
             javax.swing.SwingUtilities.invokeLater(() -> {
-                controlSwingNode.setContent(chartPanel);
+                controlSwingNode.setContent(spChart);
+                disturbSwingNode.setContent(distChart);
             });
 
             controlValidationLabel.setText("");
+
         } catch (IllegalArgumentException exception) {
             controlValidationLabel.setText(exception.getMessage());
         }
 
-
-        //     pvSpChart.getData().setAll(
-        //             toSeries("Process Variable (PV)", simulation.getPVData()),
-        //             toSeries("Setpoint (SP)", simulation.getSPData()));
-        //     opChart.getData().setAll(toSeries("OP Data", simulation.getOPData()));
-        //     controlValidationLabel.setText("");
-        // } catch (IllegalArgumentException exception) {
-        //     controlValidationLabel.setText(exception.getMessage());
-        // }
     }
 
     private Process buildProcessFromOpenLoopInputs() {
