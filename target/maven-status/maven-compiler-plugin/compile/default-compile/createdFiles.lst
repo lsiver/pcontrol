@@ -2,4 +2,6 @@ Simulation.class
 PID.class
 Main.class
 Plotter.class
+AppLauncher.class
+Main$TuningRun.class
 Process.class

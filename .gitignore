@@ -1,1 +1,4 @@
 *.tun
+target/
+PACKAGING.md
+scripts/
